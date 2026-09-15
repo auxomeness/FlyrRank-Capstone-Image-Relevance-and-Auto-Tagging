@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import path from "node:path";
 import { config } from "./config.js";
 import { router } from "./http/routes.js";
 
@@ -7,11 +8,14 @@ const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+app.use("/assets/images", express.static(path.resolve("data/images")));
+app.use("/app", express.static(path.resolve("public")));
 
 app.get("/", (req, res) => {
   res.json({
     name: "AI Image Understanding & Content Matching Engine",
     version: "1.0.0",
+    frontend: "/app",
     endpoints: [
       "GET /evidence/health",
       "POST /jobs/ingest-images",

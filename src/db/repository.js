@@ -38,12 +38,39 @@ export async function listImages() {
   return rows(await query("SELECT * FROM images ORDER BY id"));
 }
 
+export async function listImagesNeedingIngestion() {
+  return rows(
+    await query(
+      `SELECT i.*
+       FROM images i
+       LEFT JOIN image_metadata m ON m.image_id = i.id
+       LEFT JOIN image_vectors v ON v.image_id = i.id
+       WHERE m.image_id IS NULL
+          OR v.image_id IS NULL
+          OR m.status = 'failed'
+       ORDER BY i.id`,
+    ),
+  );
+}
+
 export async function getImage(id) {
   return one(await query("SELECT * FROM images WHERE id = $1", [id]));
 }
 
 export async function listPosts() {
   return rows(await query("SELECT * FROM posts ORDER BY id"));
+}
+
+export async function listImagesForReview() {
+  return rows(
+    await query(
+      `SELECT i.id, i.file_path, i.expected_subject, i.expected_category,
+              m.subject, m.category, m.caption, m.confidence, m.status, m.failure_reason
+       FROM images i
+       LEFT JOIN image_metadata m ON m.image_id = i.id
+       ORDER BY i.id`,
+    ),
+  );
 }
 
 export async function getPost(id) {

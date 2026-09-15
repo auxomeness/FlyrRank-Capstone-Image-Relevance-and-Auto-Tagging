@@ -51,6 +51,12 @@ npm start
 
 The API runs at `http://localhost:3000`.
 
+Open the simple visual review page at:
+
+```text
+http://localhost:3000/app/
+```
+
 By default, `.env.example` uses `AI_PROVIDER=mock` so the project can be graded without a paid API key. To use Gemini, set `AI_PROVIDER=gemini` and add `GEMINI_API_KEY`.
 
 ## Test And Eval
@@ -73,6 +79,9 @@ No confident match checks: 1/1
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | GET | `/evidence/health` | Reviewer health check and cost-log status |
+| GET | `/app/` | Simple visual review page |
+| GET | `/posts` | List seeded posts for the review UI |
+| GET | `/images` | List image metadata for the review UI |
 | POST | `/jobs/ingest-images` | Queue an image metadata and embedding job |
 | GET | `/jobs/:id` | Inspect job progress, failures, retries, and costs |
 | POST | `/posts` | Create or update a post |

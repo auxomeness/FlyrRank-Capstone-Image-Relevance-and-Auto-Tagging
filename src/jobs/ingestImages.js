@@ -3,7 +3,7 @@ import { config } from "../config.js";
 import {
   createJob,
   incrementJob,
-  listImages,
+  listImagesNeedingIngestion,
   logCost,
   saveImageMetadata,
   saveImageVector,
@@ -26,8 +26,12 @@ async function withRetry(action, retries = 2) {
   throw lastError;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function runImageIngestion(jobId = null) {
-  const images = await listImages();
+  const images = await listImagesNeedingIngestion();
   const job = jobId ? { id: jobId } : await createJob("image_ingestion", images.length);
   const provider = await createAiProvider();
   let calls = 0;
@@ -100,6 +104,10 @@ export async function runImageIngestion(jobId = null) {
           error.message,
           provider.visionModel,
         );
+      }
+
+      if (provider.name === "gemini") {
+        await sleep(3500);
       }
     }
 

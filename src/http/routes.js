@@ -5,7 +5,9 @@ import {
   getCostSummary,
   getJob,
   getSuggestion,
-  listImages,
+  listImagesForReview,
+  listImagesNeedingIngestion,
+  listPosts,
   reviewSuggestion,
   upsertPost,
 } from "../db/repository.js";
@@ -28,10 +30,30 @@ router.get(
   }),
 );
 
+router.get(
+  "/posts",
+  asyncHandler(async (req, res) => {
+    res.json({ posts: await listPosts() });
+  }),
+);
+
+router.get(
+  "/images",
+  asyncHandler(async (req, res) => {
+    const images = await listImagesForReview();
+    res.json({
+      images: images.map((image) => ({
+        ...image,
+        file_url: `/assets/images/${image.file_path.split("/").pop()}`,
+      })),
+    });
+  }),
+);
+
 router.post(
   "/jobs/ingest-images",
   asyncHandler(async (req, res) => {
-    const images = await listImages();
+    const images = await listImagesNeedingIngestion();
     const job = await createJob("image_ingestion", images.length);
     setImmediate(() => {
       runImageIngestion(job.id).catch((error) => {

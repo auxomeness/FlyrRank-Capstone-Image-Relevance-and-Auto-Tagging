@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Image Relevance Review</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">FlyRank Capstone</p>
+          <h1>Image Relevance Review</h1>
+        </div>
+        <button id="ingestButton" type="button">Run Ingestion</button>
+      </header>
+
+      <section class="status-grid" aria-label="System status">
+        <article>
+          <span>API</span>
+          <strong id="apiStatus">Checking</strong>
+        </article>
+        <article>
+          <span>Provider</span>
+          <strong id="providerStatus">Local API</strong>
+        </article>
+        <article>
+          <span>Job</span>
+          <strong id="jobStatus">Idle</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel">
+          <div class="panel-heading">
+            <h2>Posts</h2>
+            <span id="postCount">0</span>
+          </div>
+          <div id="postList" class="post-list"></div>
+        </aside>
+
+        <section class="panel main-panel">
+          <div class="panel-heading">
+            <div>
+              <h2 id="activeTitle">Select a post</h2>
+              <p id="activeBody">Choose a post to see ranked image suggestions and rejection reasons.</p>
+            </div>
+            <button id="refreshButton" type="button">Refresh Match</button>
+          </div>
+
+          <div id="suggestions" class="suggestions empty-state">
+            No post selected.
+          </div>
+
+          <div class="guard-box">
+            <div>
+              <h3>Mismatch Guard Demo</h3>
+              <p>Force-check the wolf image against the selected post.</p>
+            </div>
+            <button id="forceWolfButton" type="button">Check Wolf</button>
+          </div>
+          <pre id="guardResult" class="result-box">No guard check yet.</pre>
+        </section>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Image Library</h2>
+          <span id="imageCount">0</span>
+        </div>
+        <div id="imageGrid" class="image-grid"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/app/app.js"></script>
+  </body>
+</html>
