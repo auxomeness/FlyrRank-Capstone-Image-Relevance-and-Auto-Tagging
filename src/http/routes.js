@@ -1,6 +1,14 @@
 import crypto from "node:crypto";
 import express from "express";
-import { getCostSummary, getJob, getSuggestion, reviewSuggestion, upsertPost } from "../db/repository.js";
+import {
+  createJob,
+  getCostSummary,
+  getJob,
+  getSuggestion,
+  listImages,
+  reviewSuggestion,
+  upsertPost,
+} from "../db/repository.js";
 import { postCreateSchema, reviewSchema, formatZod } from "../domain/schemas.js";
 import { forceCheck, rankImagesForPost } from "../domain/matching.js";
 import { runImageIngestion } from "../jobs/ingestImages.js";
@@ -23,7 +31,13 @@ router.get(
 router.post(
   "/jobs/ingest-images",
   asyncHandler(async (req, res) => {
-    const job = await runImageIngestion();
+    const images = await listImages();
+    const job = await createJob("image_ingestion", images.length);
+    setImmediate(() => {
+      runImageIngestion(job.id).catch((error) => {
+        console.error("Image ingestion job failed", { jobId: job.id, error });
+      });
+    });
     res.status(202).json(job);
   }),
 );

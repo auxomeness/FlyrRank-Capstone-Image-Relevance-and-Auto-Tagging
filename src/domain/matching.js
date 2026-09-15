@@ -2,6 +2,41 @@ import { getImage, getPostWithVector, listImagesWithVectors, saveSuggestions } f
 import { evaluateCandidate } from "./guard.js";
 import { HttpError } from "../util/http.js";
 import { cosineSimilarity, parseEmbedding } from "../util/vector.js";
+import { subjectCompatible } from "./guard.js";
+
+function tokenize(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length >= 3);
+}
+
+function parseAttributes(value) {
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function lexicalBoost(post, candidate) {
+  const postTokens = new Set(tokenize(`${post.title} ${post.body} ${post.expected_subject || ""}`));
+  const imageTokens = new Set(
+    tokenize(`${candidate.subject} ${candidate.category} ${candidate.caption} ${parseAttributes(candidate.attributes).join(" ")}`),
+  );
+  let overlap = 0;
+  for (const token of postTokens) {
+    if (imageTokens.has(token)) overlap += 1;
+  }
+
+  const subjectBoost = post.expected_subject && subjectCompatible(post.expected_subject, candidate.subject) ? 0.12 : 0;
+  const categoryBoost = post.expected_category && post.expected_category === candidate.category ? 0.04 : 0;
+  const overlapBoost = Math.min(overlap * 0.025, 0.14);
+  return subjectBoost + categoryBoost + overlapBoost;
+}
 
 function publicSuggestion(row, candidate = null) {
   return {
@@ -33,7 +68,7 @@ export async function rankImagesForPost(postId) {
   const ranked = candidates
     .map((candidate) => ({
       candidate,
-      similarity: cosineSimilarity(postVector, parseEmbedding(candidate.image_embedding)),
+      similarity: Math.min(1, cosineSimilarity(postVector, parseEmbedding(candidate.image_embedding)) + lexicalBoost(post, candidate)),
     }))
     .sort((a, b) => b.similarity - a.similarity);
 
