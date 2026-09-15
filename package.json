@@ -1,0 +1,24 @@
+{
+  "name": "flyrank-capstone-image-relevance",
+  "version": "1.0.0",
+  "description": "FlyRank capstone: AI image understanding and content matching engine.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file=.env src/server.js",
+    "dev": "node --env-file=.env src/server.js",
+    "db:migrate": "node --env-file=.env scripts/migrate.js",
+    "seed": "node --env-file=.env scripts/seed.js",
+    "generate:images": "python3 scripts/generate_images.py",
+    "job:ingest": "node --env-file=.env scripts/run-ingest-job.js",
+    "eval": "node --env-file=.env scripts/eval.js",
+    "test": "node --env-file=.env scripts/test.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "zod": "^3.24.1"
+  }
+}

@@ -1,0 +1,13 @@
+run: "docker compose up -d db && npm install && npm run db:migrate && npm run seed && npm start"
+seed: "npm run generate:images && npm run seed && npm run job:ingest"
+test: "npm test && npm run eval"
+base_url: "http://localhost:3000"
+endpoints:
+  - "GET /evidence/health"
+  - "POST /jobs/ingest-images"
+  - "GET /jobs/:id"
+  - "POST /posts"
+  - "GET /posts/:id/images"
+  - "POST /posts/:id/images/:imageId/force-check"
+  - "POST /suggestions/:id/approve"
+  - "POST /suggestions/:id/reject"
