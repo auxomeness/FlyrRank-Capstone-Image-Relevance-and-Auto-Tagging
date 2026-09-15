@@ -1,0 +1,14 @@
+[
+  { "post_id": "post-red-fox", "expected_image_id": "animal-red-fox-01", "must_reject_image_id": "animal-wolf-01" },
+  { "post_id": "post-wolf-pack", "expected_image_id": "animal-wolf-01", "must_reject_image_id": "animal-red-fox-01" },
+  { "post_id": "post-dog-care", "expected_image_id": "animal-dog-01", "must_reject_image_id": "animal-wolf-01" },
+  { "post_id": "post-coffee", "expected_image_id": "food-coffee-01", "must_reject_image_id": "tech-laptop-01" },
+  { "post_id": "post-server", "expected_image_id": "tech-server-01", "must_reject_image_id": "nature-forest-01" },
+  { "post_id": "post-laptop", "expected_image_id": "tech-laptop-01", "must_reject_image_id": "food-coffee-01" },
+  { "post_id": "post-mountains", "expected_image_id": "nature-mountain-01", "must_reject_image_id": "transport-train-01" },
+  { "post_id": "post-beach", "expected_image_id": "nature-beach-01", "must_reject_image_id": "people-team-01" },
+  { "post_id": "post-train", "expected_image_id": "transport-train-01", "must_reject_image_id": "animal-dog-01" },
+  { "post_id": "post-teamwork", "expected_image_id": "people-team-01", "must_reject_image_id": "object-clock-01" },
+  { "post_id": "post-reading", "expected_image_id": "object-book-01", "must_reject_image_id": "animal-bear-01" },
+  { "post_id": "post-space-nebula", "expected_image_id": null, "must_reject_image_id": "nature-mountain-01" }
+]
