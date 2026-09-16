@@ -27,6 +27,7 @@ const els = {
   suggestions: document.querySelector("#suggestions"),
   refreshButton: document.querySelector("#refreshButton"),
   forceCheckButton: document.querySelector("#forceCheckButton"),
+  demoFoxButton: document.querySelector("#demoFoxButton"),
   ingestButton: document.querySelector("#ingestButton"),
 };
 
@@ -59,13 +60,13 @@ function setBusy(button, busy, label) {
 
 function resetGuard() {
   els.guardDecision.textContent = "Not checked";
-  els.guardDecision.className = "";
+  els.guardDecision.className = "decision-pending";
   els.guardReason.textContent = "Choose an image and run the guard.";
 }
 
 function preferredDefaultImage(post) {
   if (!post) return state.images[0]?.id || null;
-  if (post.id === "post-red-fox") return "animal-wolf-01";
+  if (post.id === "post-red-fox") return "animal-red-fox-01";
   const direct = state.images.find((image) => image.expected_subject === post.expected_subject);
   return direct?.id || state.images[0]?.id || null;
 }
@@ -133,12 +134,12 @@ function renderComparison() {
     ? `The system is trying to find a safe image for: ${post.expected_subject}.`
     : "Choose an article to see matching results.";
 
-  els.compareImageTitle.textContent = image?.id || "No image selected";
+  els.compareImageTitle.textContent = image ? `${image.subject || image.expected_subject || image.id}` : "No image selected";
   if (image) {
     els.compareImage.src = image.file_url;
     els.compareImage.alt = image.id;
     els.compareImage.hidden = false;
-    els.compareImageMeta.textContent = `${image.subject || image.expected_subject} - ${image.category || image.expected_category} - ${image.license || "license unknown"}`;
+    els.compareImageMeta.textContent = `${image.id} - ${image.category || image.expected_category} - ${image.license || "license unknown"}`;
   } else {
     els.compareImage.removeAttribute("src");
     els.compareImage.hidden = true;
@@ -163,7 +164,8 @@ function renderSuggestions(result) {
   }
 
   const top = result.suggestions[0];
-  els.topMatchTitle.textContent = `${top.image_id} (${Math.round(Number(top.similarity) * 100)}%)`;
+  const topImage = getImage(top.image_id);
+  els.topMatchTitle.textContent = `${topImage?.subject || top.image_id} (${Math.round(Number(top.similarity) * 100)}%)`;
   els.topMatchReason.textContent = top.reason;
 
   els.suggestions.className = "suggestions";
@@ -199,6 +201,20 @@ async function selectPost(postId) {
   renderImages();
   renderComparison();
   await refreshMatch();
+}
+
+async function runFoxWolfDemo() {
+  const foxPost = state.posts.find((post) => post.id === "post-red-fox");
+  if (!foxPost) return;
+  state.activePostId = foxPost.id;
+  state.selectedImageId = "animal-wolf-01";
+  resetGuard();
+  renderPosts();
+  renderImages();
+  renderComparison();
+  await refreshMatch();
+  await forceSelectedCheck();
+  document.querySelector(".main-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function refreshMatch() {
@@ -289,6 +305,7 @@ async function boot() {
 
 els.refreshButton.addEventListener("click", refreshMatch);
 els.forceCheckButton.addEventListener("click", forceSelectedCheck);
+els.demoFoxButton.addEventListener("click", runFoxWolfDemo);
 els.ingestButton.addEventListener("click", runIngestion);
 els.candidateSelect.addEventListener("change", () => selectImage(els.candidateSelect.value));
 

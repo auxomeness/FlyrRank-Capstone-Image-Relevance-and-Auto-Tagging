@@ -9,32 +9,41 @@
   <body>
     <main class="shell">
       <header class="hero">
-        <div>
+        <div class="hero-main">
           <p class="eyebrow">FlyRank AI Capstone</p>
-          <h1>Match each article with the safest relevant image.</h1>
+          <h1>AI image matching that knows when to say no.</h1>
           <p class="hero-copy">
-            This demo shows how the backend reads real images, ranks likely matches for a blog post, and rejects risky
-            mismatches such as a wolf image for a red fox article.
+            Pick a blog post, compare it against real photos, and see whether the mismatch guard accepts the image or
+            rejects it. The main test: a red fox article should not use a wolf photo.
           </p>
+          <div class="hero-actions">
+            <button id="demoFoxButton" type="button">Run Fox vs Wolf Demo</button>
+            <a href="#library">Browse Image Library</a>
+          </div>
         </div>
-        <button id="ingestButton" type="button">Run AI Ingestion</button>
+        <aside class="hero-card">
+          <span>What this proves</span>
+          <strong>Relevant image suggested. Unsafe image rejected.</strong>
+          <p>The backend combines Gemini image metadata, embeddings, and guard rules before showing an image to an editor.</p>
+          <button id="ingestButton" type="button">Run AI Ingestion</button>
+        </aside>
       </header>
 
       <section class="flow" aria-label="Workflow">
         <article>
           <strong>1</strong>
-          <span>Choose an article</span>
-          <p>The post provides the topic the image must match.</p>
+          <span>Article</span>
+          <p>The post says what the image must be about.</p>
         </article>
         <article>
           <strong>2</strong>
-          <span>Review ranked images</span>
-          <p>The API compares post and image embeddings.</p>
+          <span>AI ranking</span>
+          <p>The system ranks real photos by semantic meaning.</p>
         </article>
         <article>
           <strong>3</strong>
-          <span>Run the guard</span>
-          <p>The guard accepts safe matches and rejects mismatches.</p>
+          <span>Guard decision</span>
+          <p>The selected image becomes MATCH or REJECT.</p>
         </article>
       </section>
 
@@ -68,8 +77,8 @@
         <section class="panel main-panel">
           <div class="panel-heading">
             <div>
-              <p class="section-kicker">Step 2</p>
-              <h2>AI Matching Result</h2>
+              <p class="section-kicker">Live demo</p>
+              <h2>Article vs Image</h2>
               <p id="activeBody">Choose an article to see matching results.</p>
             </div>
             <button id="refreshButton" type="button">Refresh Match</button>
@@ -77,7 +86,7 @@
 
           <div class="compare-grid">
             <article class="compare-card">
-              <span>Selected article</span>
+              <span>Article being matched</span>
               <h3 id="comparePostTitle">No article selected</h3>
               <p id="comparePostBody">Pick one article from the left.</p>
             </article>
@@ -85,7 +94,7 @@
             <article class="compare-card image-compare-card">
               <div class="compare-card-head">
                 <div>
-                  <span>Selected image</span>
+                  <span>Image being tested</span>
                   <h3 id="compareImageTitle">No image selected</h3>
                 </div>
                 <select id="candidateSelect" aria-label="Candidate image"></select>
@@ -96,13 +105,13 @@
           </div>
 
           <div class="decision-row">
-            <article class="decision-card">
+            <article class="decision-card recommendation-card">
               <span>Top recommendation</span>
               <strong id="topMatchTitle">Waiting for article</strong>
               <p id="topMatchReason">The best accepted image will appear here.</p>
             </article>
-            <article class="decision-card">
-              <span>Selected image guard</span>
+            <article class="decision-card guard-decision-card">
+              <span>Guard result for selected image</span>
               <strong id="guardDecision">Not checked</strong>
               <p id="guardReason">Choose an image and run the guard.</p>
             </article>
@@ -112,22 +121,26 @@
             <div>
               <p class="section-kicker">Step 3</p>
               <h3>Mismatch Guard</h3>
-              <p>Use this to prove whether the selected image is safe for the selected article.</p>
+              <p>Click the button to ask: “Is this selected image safe for this article?”</p>
             </div>
             <button id="forceCheckButton" type="button">Check Selected Image</button>
+          </div>
+          <div class="legend">
+            <span><b class="dot match-dot"></b> MATCH means the image is safe to use.</span>
+            <span><b class="dot reject-dot"></b> REJECT means the image is too risky or wrong.</span>
           </div>
 
           <div class="section-title">
             <div>
-              <p class="section-kicker">Ranked output</p>
-              <h3>Suggested Images</h3>
+              <p class="section-kicker">AI-ranked output</p>
+              <h3>Images the system recommends</h3>
             </div>
           </div>
           <div id="suggestions" class="suggestions empty-state">No article selected.</div>
         </section>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="library">
         <div class="panel-heading">
           <div>
             <p class="section-kicker">Real image corpus</p>
