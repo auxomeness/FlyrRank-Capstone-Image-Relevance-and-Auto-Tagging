@@ -49,6 +49,26 @@
             <button id="refreshButton" type="button">Refresh Match</button>
           </div>
 
+          <div class="compare-grid">
+            <article class="compare-card">
+              <span>Blog Post</span>
+              <h3 id="comparePostTitle">No post selected</h3>
+              <p id="comparePostBody">Select a post from the left panel.</p>
+            </article>
+
+            <article class="compare-card image-compare-card">
+              <div class="compare-card-head">
+                <div>
+                  <span>Candidate Image</span>
+                  <h3 id="compareImageTitle">No image selected</h3>
+                </div>
+                <select id="candidateSelect" aria-label="Candidate image"></select>
+              </div>
+              <img id="compareImage" alt="Selected candidate" />
+              <p id="compareImageMeta">Select an image from the library below.</p>
+            </article>
+          </div>
+
           <div id="suggestions" class="suggestions empty-state">
             No post selected.
           </div>
@@ -56,9 +76,9 @@
           <div class="guard-box">
             <div>
               <h3>Mismatch Guard Demo</h3>
-              <p>Force-check the wolf image against the selected post.</p>
+              <p>Check whether the selected image is safe for the selected post.</p>
             </div>
-            <button id="forceWolfButton" type="button">Check Wolf</button>
+            <button id="forceCheckButton" type="button">Check Selected</button>
           </div>
           <pre id="guardResult" class="result-box">No guard check yet.</pre>
         </section>

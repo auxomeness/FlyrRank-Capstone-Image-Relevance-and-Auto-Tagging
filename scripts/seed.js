@@ -12,8 +12,8 @@ for (const image of images) {
   await upsertImage({
     id: image.id,
     file_path: path.join("data/images", image.file),
-    source_url: "generated-locally",
-    license: "owned generated placeholder for capstone evaluation",
+    source_url: image.source_url || image.page_url || "source missing",
+    license: image.license || "license missing",
     expected_subject: image.subject,
     expected_category: image.category,
   });

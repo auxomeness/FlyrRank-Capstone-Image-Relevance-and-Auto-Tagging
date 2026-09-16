@@ -4,30 +4,29 @@
 
 - Vision model output is validated by `imageMetadataSchema` in `src/domain/schemas.js`.
 - Invalid responses are rejected by tests in `scripts/test.js`.
-- Low-confidence classifications are flagged instead of accepted. The mock corpus intentionally flags `object-clock-01` at confidence `0.52`.
+- Low-confidence classifications are flagged instead of accepted by `src/jobs/ingestImages.js`.
 - Images are processed through a tracked ingestion job with bounded retries in `src/jobs/ingestImages.js`.
 - Vision and embedding calls are written to `cost_logs`.
 
-Job output:
-
-```json
-{
-  "status": "complete",
-  "total": 40,
-  "processed": 40,
-  "failed": 0
-}
-```
-
-Cost summary:
+Current image metadata status:
 
 ```json
 [
-  { "call_type": "embedding", "provider": "mock", "model": "mock-embedding-v1", "status": "ok", "calls": 40, "estimated_cost_usd": 0 },
-  { "call_type": "vision", "provider": "mock", "model": "mock-vision-v1", "status": "accepted", "calls": 39, "estimated_cost_usd": 0 },
-  { "call_type": "vision", "provider": "mock", "model": "mock-vision-v1", "status": "flagged", "calls": 1, "estimated_cost_usd": 0 }
+  { "status": "accepted", "count": 40 }
 ]
 ```
+
+Recent successful Gemini cost summary:
+
+```json
+[
+  { "call_type": "vision", "provider": "gemini", "model": "gemini-3.6-flash", "status": "accepted", "calls": 21 },
+  { "call_type": "vision", "provider": "gemini", "model": "gemini-3.1-flash-lite", "status": "accepted", "calls": 19 },
+  { "call_type": "embedding", "provider": "gemini", "model": "gemini-embedding-001", "status": "ok", "calls": 40 }
+]
+```
+
+Earlier failed calls are also retained in `cost_logs`, which proves failed model/quota attempts were recorded instead of hidden.
 
 ## Matching System
 
@@ -44,13 +43,13 @@ Fox ranking proof:
   "status": "suggestions",
   "suggestions": [
     {
-      "image_id": "animal-red-fox-01",
+      "image_id": "animal-red-fox-02",
       "rank": 1,
       "decision": "suggested",
       "candidate": {
-        "subject": "red fox",
+        "subject": "cross fox",
         "category": "animal",
-        "confidence": 0.92
+        "confidence": 0.95
       }
     }
   ]
@@ -102,7 +101,7 @@ Health output:
 {
   "status": "ok",
   "service": "ai-image-understanding-content-matching",
-  "cost_log_groups": 3
+  "cost_log_groups": 9
 }
 ```
 
@@ -115,7 +114,7 @@ Health output:
 Eval output:
 
 ```text
-Top-1 precision: 11/11 (100.0%)
+Top-1 precision: 9/11 (81.8%)
 Forced rejection checks: 12/12
 No confident match checks: 1/1
 ```

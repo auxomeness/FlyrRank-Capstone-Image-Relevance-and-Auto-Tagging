@@ -9,6 +9,8 @@
     "dev": "node --env-file=.env src/server.js",
     "db:migrate": "node --env-file=.env scripts/migrate.js",
     "seed": "node --env-file=.env scripts/seed.js",
+    "reset:images": "node --env-file=.env scripts/reset_image_processing.js",
+    "download:images": "python3 scripts/download_wikimedia_images.py",
     "generate:images": "python3 scripts/generate_images.py",
     "job:ingest": "node --env-file=.env scripts/run-ingest-job.js",
     "eval": "node --env-file=.env scripts/eval.js",

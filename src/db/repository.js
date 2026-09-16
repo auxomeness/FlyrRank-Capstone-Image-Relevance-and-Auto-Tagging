@@ -64,13 +64,20 @@ export async function listPosts() {
 export async function listImagesForReview() {
   return rows(
     await query(
-      `SELECT i.id, i.file_path, i.expected_subject, i.expected_category,
+      `SELECT i.id, i.file_path, i.source_url, i.license, i.expected_subject, i.expected_category,
               m.subject, m.category, m.caption, m.confidence, m.status, m.failure_reason
        FROM images i
        LEFT JOIN image_metadata m ON m.image_id = i.id
        ORDER BY i.id`,
     ),
   );
+}
+
+export async function resetImageProcessing() {
+  await query("DELETE FROM reviews");
+  await query("DELETE FROM suggestions");
+  await query("DELETE FROM image_vectors");
+  await query("DELETE FROM image_metadata");
 }
 
 export async function getPost(id) {

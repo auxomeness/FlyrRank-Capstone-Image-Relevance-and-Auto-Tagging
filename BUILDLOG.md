@@ -27,6 +27,14 @@
 - Added `npm run eval` for 12 labeled posts, including forced rejection and no-confident-match checks.
 - Verified the API manually with `curl` against the local Express server.
 
+## Real Image Corpus Pass
+
+- Replaced generated placeholder image cards with 40 real Wikimedia Commons images.
+- Added source URLs and license strings to `data/manifests/images.json`.
+- Added `npm run download:images` so the corpus can be rebuilt from Wikimedia Commons.
+- Cleared stale image metadata and reprocessed the real corpus with Gemini models.
+- Updated the review UI so a reviewer can compare a selected blog post and selected image side by side.
+
 ## AI Assistance Notes
 
 AI helped draft the project structure, schema, guard rules, and evidence checklist. I still reviewed and adjusted the scope to keep the project small enough to finish and explain.

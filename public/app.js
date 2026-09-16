@@ -2,6 +2,7 @@ const state = {
   posts: [],
   images: [],
   activePostId: null,
+  selectedImageId: null,
   activeJobId: null,
 };
 
@@ -15,10 +16,16 @@ const els = {
   imageGrid: document.querySelector("#imageGrid"),
   activeTitle: document.querySelector("#activeTitle"),
   activeBody: document.querySelector("#activeBody"),
+  comparePostTitle: document.querySelector("#comparePostTitle"),
+  comparePostBody: document.querySelector("#comparePostBody"),
+  compareImageTitle: document.querySelector("#compareImageTitle"),
+  compareImage: document.querySelector("#compareImage"),
+  compareImageMeta: document.querySelector("#compareImageMeta"),
+  candidateSelect: document.querySelector("#candidateSelect"),
   suggestions: document.querySelector("#suggestions"),
   guardResult: document.querySelector("#guardResult"),
   refreshButton: document.querySelector("#refreshButton"),
-  forceWolfButton: document.querySelector("#forceWolfButton"),
+  forceCheckButton: document.querySelector("#forceCheckButton"),
   ingestButton: document.querySelector("#ingestButton"),
 };
 
@@ -37,6 +44,13 @@ async function api(path, options) {
 function imageUrl(imageId) {
   const image = state.images.find((item) => item.id === imageId);
   return image?.file_url || "";
+}
+
+function preferredDefaultImage(post) {
+  if (!post) return state.images[0]?.id || null;
+  if (post.id === "post-red-fox") return "animal-wolf-01";
+  const direct = state.images.find((image) => image.expected_subject === post.expected_subject);
+  return direct?.id || state.images[0]?.id || null;
 }
 
 function setBusy(button, busy, label) {
@@ -64,10 +78,20 @@ function renderPosts() {
 
 function renderImages() {
   els.imageCount.textContent = String(state.images.length);
+  els.candidateSelect.innerHTML = state.images
+    .map(
+      (image) => `
+        <option value="${image.id}" ${image.id === state.selectedImageId ? "selected" : ""}>
+          ${image.id} · ${image.subject || image.expected_subject || "pending"}
+        </option>
+      `,
+    )
+    .join("");
+
   els.imageGrid.innerHTML = state.images
     .map(
       (image) => `
-        <article class="image-card">
+        <article class="image-card ${image.id === state.selectedImageId ? "selected" : ""}" data-image-id="${image.id}">
           <img src="${image.file_url}" alt="${image.id}" loading="lazy" />
           <div class="card-body">
             <div class="meta-line">
@@ -75,12 +99,43 @@ function renderImages() {
               <span class="status-${image.status || "pending"}">${image.status || "pending"}</span>
             </div>
             <strong>${image.subject || image.expected_subject || image.id}</strong>
-            <p>${image.caption || image.failure_reason || "Not processed yet."}</p>
+            <p>${image.caption || image.failure_reason || image.license || "Not processed yet."}</p>
           </div>
         </article>
       `,
     )
     .join("");
+
+  for (const card of els.imageGrid.querySelectorAll("[data-image-id]")) {
+    card.addEventListener("click", () => selectImage(card.dataset.imageId));
+  }
+}
+
+function renderComparison() {
+  const post = state.posts.find((item) => item.id === state.activePostId);
+  const image = state.images.find((item) => item.id === state.selectedImageId);
+
+  els.comparePostTitle.textContent = post?.title || "No post selected";
+  els.comparePostBody.textContent = post?.body || "Select a post from the left panel.";
+
+  els.compareImageTitle.textContent = image?.id || "No image selected";
+  if (image) {
+    els.compareImage.src = image.file_url;
+    els.compareImage.alt = image.id;
+    els.compareImage.hidden = false;
+    els.compareImageMeta.textContent = `${image.subject || image.expected_subject} · ${image.category || image.expected_category} · ${image.license || "license unknown"}`;
+  } else {
+    els.compareImage.removeAttribute("src");
+    els.compareImage.hidden = true;
+    els.compareImageMeta.textContent = "Select an image from the library below.";
+  }
+}
+
+function selectImage(imageId) {
+  state.selectedImageId = imageId;
+  renderImages();
+  renderComparison();
+  els.guardResult.textContent = "No guard check yet.";
 }
 
 function renderSuggestions(result) {
@@ -115,8 +170,11 @@ async function selectPost(postId) {
   const post = state.posts.find((item) => item.id === postId);
   els.activeTitle.textContent = post.title;
   els.activeBody.textContent = post.body;
+  state.selectedImageId = preferredDefaultImage(post);
   els.guardResult.textContent = "No guard check yet.";
   renderPosts();
+  renderImages();
+  renderComparison();
   await refreshMatch();
 }
 
@@ -134,16 +192,16 @@ async function refreshMatch() {
   }
 }
 
-async function forceWolfCheck() {
-  if (!state.activePostId) return;
-  setBusy(els.forceWolfButton, true, "Checking");
+async function forceSelectedCheck() {
+  if (!state.activePostId || !state.selectedImageId) return;
+  setBusy(els.forceCheckButton, true, "Checking");
   try {
-    const result = await api(`/posts/${state.activePostId}/images/animal-wolf-01/force-check`, { method: "POST" });
+    const result = await api(`/posts/${state.activePostId}/images/${state.selectedImageId}/force-check`, { method: "POST" });
     els.guardResult.textContent = JSON.stringify(result, null, 2);
   } catch (error) {
     els.guardResult.textContent = error.message;
   } finally {
-    setBusy(els.forceWolfButton, false, "Check Wolf");
+    setBusy(els.forceCheckButton, false, "Check Selected");
   }
 }
 
@@ -186,7 +244,9 @@ async function loadPosts() {
 async function loadImages() {
   const { images } = await api("/images");
   state.images = images;
+  if (!state.selectedImageId && images[0]) state.selectedImageId = images[0].id;
   renderImages();
+  renderComparison();
 }
 
 async function boot() {
@@ -203,7 +263,8 @@ async function boot() {
 }
 
 els.refreshButton.addEventListener("click", refreshMatch);
-els.forceWolfButton.addEventListener("click", forceWolfCheck);
+els.forceCheckButton.addEventListener("click", forceSelectedCheck);
 els.ingestButton.addEventListener("click", runIngestion);
+els.candidateSelect.addEventListener("change", () => selectImage(els.candidateSelect.value));
 
 boot();

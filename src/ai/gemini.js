@@ -58,7 +58,8 @@ export function createGeminiProvider() {
         ],
       });
 
-      return JSON.parse(body.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+      const parsed = JSON.parse(body.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+      return Array.isArray(parsed) ? parsed[0] || {} : parsed;
     },
 
     async embedText(text) {

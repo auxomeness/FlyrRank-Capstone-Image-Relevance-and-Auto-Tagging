@@ -69,7 +69,7 @@ npm run eval
 Current eval result:
 
 ```text
-Top-1 precision: 11/11 (100.0%)
+Top-1 precision: 9/11 (81.8%)
 Forced rejection checks: 12/12
 No confident match checks: 1/1
 ```
@@ -101,15 +101,19 @@ curl -s http://localhost:3000/posts/post-space-nebula/images
 
 Expected outcomes:
 
-- `post-red-fox` returns `animal-red-fox-01` as rank 1.
+- `post-red-fox` returns a red fox photo as rank 1.
 - Forced `animal-wolf-01` for the fox post returns `decision: "rejected"`.
 - `post-space-nebula` returns `status: "no_confident_match"`.
 
 ## Dataset
 
-The project includes 40 generated placeholder PNG images in `data/images/`, grouped across animals, food, technology, nature, transport, people, and objects. The animal subset intentionally includes red fox, wolf, dog, bear, and deer examples so the mismatch guard can be tested against visually and semantically close candidates.
+The project includes 40 real Wikimedia Commons images in `data/images/`, grouped across animals, food, technology, nature, transport, people, and objects. Each manifest row includes a source URL and license. The animal subset intentionally includes red fox, wolf, dog, bear, and deer examples so the mismatch guard can be tested against visually and semantically close candidates.
 
-The generated images are local project assets, not scraped stock photos.
+The corpus can be rebuilt with:
+
+```bash
+npm run download:images
+```
 
 ## Gemini References
 
