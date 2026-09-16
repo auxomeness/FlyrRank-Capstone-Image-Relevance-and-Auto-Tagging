@@ -8,13 +8,11 @@ const state = {
 
 const els = {
   apiStatus: document.querySelector("#apiStatus"),
-  providerStatus: document.querySelector("#providerStatus"),
   jobStatus: document.querySelector("#jobStatus"),
   postCount: document.querySelector("#postCount"),
   imageCount: document.querySelector("#imageCount"),
   postList: document.querySelector("#postList"),
   imageGrid: document.querySelector("#imageGrid"),
-  activeTitle: document.querySelector("#activeTitle"),
   activeBody: document.querySelector("#activeBody"),
   comparePostTitle: document.querySelector("#comparePostTitle"),
   comparePostBody: document.querySelector("#comparePostBody"),
@@ -22,8 +20,11 @@ const els = {
   compareImage: document.querySelector("#compareImage"),
   compareImageMeta: document.querySelector("#compareImageMeta"),
   candidateSelect: document.querySelector("#candidateSelect"),
+  topMatchTitle: document.querySelector("#topMatchTitle"),
+  topMatchReason: document.querySelector("#topMatchReason"),
+  guardDecision: document.querySelector("#guardDecision"),
+  guardReason: document.querySelector("#guardReason"),
   suggestions: document.querySelector("#suggestions"),
-  guardResult: document.querySelector("#guardResult"),
   refreshButton: document.querySelector("#refreshButton"),
   forceCheckButton: document.querySelector("#forceCheckButton"),
   ingestButton: document.querySelector("#ingestButton"),
@@ -35,15 +36,31 @@ async function api(path, options) {
     ...options,
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || `Request failed: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`);
   return data;
 }
 
+function getPost() {
+  return state.posts.find((item) => item.id === state.activePostId);
+}
+
+function getImage(imageId = state.selectedImageId) {
+  return state.images.find((item) => item.id === imageId);
+}
+
 function imageUrl(imageId) {
-  const image = state.images.find((item) => item.id === imageId);
-  return image?.file_url || "";
+  return getImage(imageId)?.file_url || "";
+}
+
+function setBusy(button, busy, label) {
+  button.disabled = busy;
+  if (label) button.textContent = label;
+}
+
+function resetGuard() {
+  els.guardDecision.textContent = "Not checked";
+  els.guardDecision.className = "";
+  els.guardReason.textContent = "Choose an image and run the guard.";
 }
 
 function preferredDefaultImage(post) {
@@ -53,11 +70,6 @@ function preferredDefaultImage(post) {
   return direct?.id || state.images[0]?.id || null;
 }
 
-function setBusy(button, busy, label) {
-  button.disabled = busy;
-  if (label) button.textContent = label;
-}
-
 function renderPosts() {
   els.postCount.textContent = String(state.posts.length);
   els.postList.innerHTML = state.posts
@@ -65,7 +77,7 @@ function renderPosts() {
       (post) => `
         <button class="post-card ${post.id === state.activePostId ? "active" : ""}" data-post-id="${post.id}" type="button">
           <strong>${post.title}</strong>
-          <span>${post.expected_subject || "No subject"} · ${post.expected_category || "No category"}</span>
+          <span>Needs: ${post.expected_subject || "unknown"} image</span>
         </button>
       `,
     )
@@ -82,7 +94,7 @@ function renderImages() {
     .map(
       (image) => `
         <option value="${image.id}" ${image.id === state.selectedImageId ? "selected" : ""}>
-          ${image.id} · ${image.subject || image.expected_subject || "pending"}
+          ${image.id} - ${image.subject || image.expected_subject || "pending"}
         </option>
       `,
     )
@@ -112,22 +124,25 @@ function renderImages() {
 }
 
 function renderComparison() {
-  const post = state.posts.find((item) => item.id === state.activePostId);
-  const image = state.images.find((item) => item.id === state.selectedImageId);
+  const post = getPost();
+  const image = getImage();
 
-  els.comparePostTitle.textContent = post?.title || "No post selected";
-  els.comparePostBody.textContent = post?.body || "Select a post from the left panel.";
+  els.comparePostTitle.textContent = post?.title || "No article selected";
+  els.comparePostBody.textContent = post?.body || "Pick one article from the left.";
+  els.activeBody.textContent = post
+    ? `The system is trying to find a safe image for: ${post.expected_subject}.`
+    : "Choose an article to see matching results.";
 
   els.compareImageTitle.textContent = image?.id || "No image selected";
   if (image) {
     els.compareImage.src = image.file_url;
     els.compareImage.alt = image.id;
     els.compareImage.hidden = false;
-    els.compareImageMeta.textContent = `${image.subject || image.expected_subject} · ${image.category || image.expected_category} · ${image.license || "license unknown"}`;
+    els.compareImageMeta.textContent = `${image.subject || image.expected_subject} - ${image.category || image.expected_category} - ${image.license || "license unknown"}`;
   } else {
     els.compareImage.removeAttribute("src");
     els.compareImage.hidden = true;
-    els.compareImageMeta.textContent = "Select an image from the library below.";
+    els.compareImageMeta.textContent = "Pick an image from the library below or from the dropdown.";
   }
 }
 
@@ -135,21 +150,27 @@ function selectImage(imageId) {
   state.selectedImageId = imageId;
   renderImages();
   renderComparison();
-  els.guardResult.textContent = "No guard check yet.";
+  resetGuard();
 }
 
 function renderSuggestions(result) {
   if (result.status === "no_confident_match") {
+    els.topMatchTitle.textContent = "No confident match";
+    els.topMatchReason.textContent = result.suggestions[0]?.reason || "The guard rejected every candidate.";
     els.suggestions.className = "suggestions empty-state";
-    els.suggestions.textContent = result.suggestions[0]?.reason || "No confident match.";
+    els.suggestions.textContent = "No image passed the mismatch guard.";
     return;
   }
+
+  const top = result.suggestions[0];
+  els.topMatchTitle.textContent = `${top.image_id} (${Math.round(Number(top.similarity) * 100)}%)`;
+  els.topMatchReason.textContent = top.reason;
 
   els.suggestions.className = "suggestions";
   els.suggestions.innerHTML = result.suggestions
     .map(
       (suggestion) => `
-        <article class="suggestion-card">
+        <article class="suggestion-card ${suggestion.image_id === state.selectedImageId ? "selected" : ""}" data-image-id="${suggestion.image_id}">
           <img src="${imageUrl(suggestion.image_id)}" alt="${suggestion.image_id}" />
           <div class="card-body">
             <div class="meta-line">
@@ -163,15 +184,17 @@ function renderSuggestions(result) {
       `,
     )
     .join("");
+
+  for (const card of els.suggestions.querySelectorAll("[data-image-id]")) {
+    card.addEventListener("click", () => selectImage(card.dataset.imageId));
+  }
 }
 
 async function selectPost(postId) {
   state.activePostId = postId;
-  const post = state.posts.find((item) => item.id === postId);
-  els.activeTitle.textContent = post.title;
-  els.activeBody.textContent = post.body;
+  const post = getPost();
   state.selectedImageId = preferredDefaultImage(post);
-  els.guardResult.textContent = "No guard check yet.";
+  resetGuard();
   renderPosts();
   renderImages();
   renderComparison();
@@ -182,7 +205,7 @@ async function refreshMatch() {
   if (!state.activePostId) return;
   setBusy(els.refreshButton, true, "Refreshing");
   els.suggestions.className = "suggestions empty-state";
-  els.suggestions.textContent = "Ranking images...";
+  els.suggestions.textContent = "Ranking image candidates...";
   try {
     renderSuggestions(await api(`/posts/${state.activePostId}/images`));
   } catch (error) {
@@ -197,11 +220,16 @@ async function forceSelectedCheck() {
   setBusy(els.forceCheckButton, true, "Checking");
   try {
     const result = await api(`/posts/${state.activePostId}/images/${state.selectedImageId}/force-check`, { method: "POST" });
-    els.guardResult.textContent = JSON.stringify(result, null, 2);
+    const accepted = result.decision === "suggested";
+    els.guardDecision.textContent = accepted ? "MATCH" : "REJECT";
+    els.guardDecision.className = accepted ? "decision-ok" : "decision-bad";
+    els.guardReason.textContent = `${result.image_id}: ${result.reason}`;
   } catch (error) {
-    els.guardResult.textContent = error.message;
+    els.guardDecision.textContent = "ERROR";
+    els.guardDecision.className = "decision-bad";
+    els.guardReason.textContent = error.message;
   } finally {
-    setBusy(els.forceCheckButton, false, "Check Selected");
+    setBusy(els.forceCheckButton, false, "Check Selected Image");
   }
 }
 
@@ -210,11 +238,11 @@ async function runIngestion() {
   try {
     const job = await api("/jobs/ingest-images", { method: "POST" });
     state.activeJobId = job.id;
-    els.jobStatus.textContent = `${job.status} · ${job.total}`;
+    els.jobStatus.textContent = `${job.status} - ${job.total}`;
     pollJob();
   } catch (error) {
     els.jobStatus.textContent = error.message;
-    setBusy(els.ingestButton, false, "Run Ingestion");
+    setBusy(els.ingestButton, false, "Run AI Ingestion");
   }
 }
 
@@ -222,12 +250,12 @@ async function pollJob() {
   if (!state.activeJobId) return;
   const result = await api(`/jobs/${state.activeJobId}`);
   const job = result.job;
-  els.jobStatus.textContent = `${job.status} · ${job.processed}/${job.total} ok · ${job.failed} failed`;
+  els.jobStatus.textContent = `${job.status} - ${job.processed}/${job.total} ok - ${job.failed} failed`;
   if (job.status === "running" || job.status === "queued") {
     window.setTimeout(pollJob, 3000);
     return;
   }
-  setBusy(els.ingestButton, false, "Run Ingestion");
+  setBusy(els.ingestButton, false, "Run AI Ingestion");
   await loadImages();
   if (state.activePostId) await refreshMatch();
 }
@@ -236,9 +264,7 @@ async function loadPosts() {
   const { posts } = await api("/posts");
   state.posts = posts;
   renderPosts();
-  if (!state.activePostId && posts[0]) {
-    await selectPost(posts[0].id);
-  }
+  if (!state.activePostId && posts[0]) await selectPost(posts[0].id);
 }
 
 async function loadImages() {
@@ -253,12 +279,11 @@ async function boot() {
   try {
     const health = await api("/evidence/health");
     els.apiStatus.textContent = health.status;
-    els.providerStatus.textContent = `${health.cost_log_groups} cost groups`;
     await loadImages();
     await loadPosts();
   } catch (error) {
     els.apiStatus.textContent = "Error";
-    els.providerStatus.textContent = error.message;
+    els.jobStatus.textContent = error.message;
   }
 }
 

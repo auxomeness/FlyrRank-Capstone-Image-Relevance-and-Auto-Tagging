@@ -3,38 +3,63 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Image Relevance Review</title>
+    <title>Image Matching Demo</title>
     <link rel="stylesheet" href="/app/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <header class="topbar">
+      <header class="hero">
         <div>
-          <p class="eyebrow">FlyRank Capstone</p>
-          <h1>Image Relevance Review</h1>
+          <p class="eyebrow">FlyRank AI Capstone</p>
+          <h1>Match each article with the safest relevant image.</h1>
+          <p class="hero-copy">
+            This demo shows how the backend reads real images, ranks likely matches for a blog post, and rejects risky
+            mismatches such as a wolf image for a red fox article.
+          </p>
         </div>
-        <button id="ingestButton" type="button">Run Ingestion</button>
+        <button id="ingestButton" type="button">Run AI Ingestion</button>
       </header>
+
+      <section class="flow" aria-label="Workflow">
+        <article>
+          <strong>1</strong>
+          <span>Choose an article</span>
+          <p>The post provides the topic the image must match.</p>
+        </article>
+        <article>
+          <strong>2</strong>
+          <span>Review ranked images</span>
+          <p>The API compares post and image embeddings.</p>
+        </article>
+        <article>
+          <strong>3</strong>
+          <span>Run the guard</span>
+          <p>The guard accepts safe matches and rejects mismatches.</p>
+        </article>
+      </section>
 
       <section class="status-grid" aria-label="System status">
         <article>
-          <span>API</span>
+          <span>API status</span>
           <strong id="apiStatus">Checking</strong>
         </article>
         <article>
-          <span>Provider</span>
-          <strong id="providerStatus">Local API</strong>
+          <span>Images</span>
+          <strong id="imageCount">0</strong>
         </article>
         <article>
-          <span>Job</span>
+          <span>Last job</span>
           <strong id="jobStatus">Idle</strong>
         </article>
       </section>
 
-      <section class="workspace">
+      <section class="demo-grid">
         <aside class="panel">
           <div class="panel-heading">
-            <h2>Posts</h2>
+            <div>
+              <p class="section-kicker">Step 1</p>
+              <h2>Articles</h2>
+            </div>
             <span id="postCount">0</span>
           </div>
           <div id="postList" class="post-list"></div>
@@ -43,51 +68,72 @@
         <section class="panel main-panel">
           <div class="panel-heading">
             <div>
-              <h2 id="activeTitle">Select a post</h2>
-              <p id="activeBody">Choose a post to see ranked image suggestions and rejection reasons.</p>
+              <p class="section-kicker">Step 2</p>
+              <h2>AI Matching Result</h2>
+              <p id="activeBody">Choose an article to see matching results.</p>
             </div>
             <button id="refreshButton" type="button">Refresh Match</button>
           </div>
 
           <div class="compare-grid">
             <article class="compare-card">
-              <span>Blog Post</span>
-              <h3 id="comparePostTitle">No post selected</h3>
-              <p id="comparePostBody">Select a post from the left panel.</p>
+              <span>Selected article</span>
+              <h3 id="comparePostTitle">No article selected</h3>
+              <p id="comparePostBody">Pick one article from the left.</p>
             </article>
 
             <article class="compare-card image-compare-card">
               <div class="compare-card-head">
                 <div>
-                  <span>Candidate Image</span>
+                  <span>Selected image</span>
                   <h3 id="compareImageTitle">No image selected</h3>
                 </div>
                 <select id="candidateSelect" aria-label="Candidate image"></select>
               </div>
-              <img id="compareImage" alt="Selected candidate" />
-              <p id="compareImageMeta">Select an image from the library below.</p>
+              <img id="compareImage" alt="Selected candidate" hidden />
+              <p id="compareImageMeta">Pick an image from the library below or from the dropdown.</p>
             </article>
           </div>
 
-          <div id="suggestions" class="suggestions empty-state">
-            No post selected.
+          <div class="decision-row">
+            <article class="decision-card">
+              <span>Top recommendation</span>
+              <strong id="topMatchTitle">Waiting for article</strong>
+              <p id="topMatchReason">The best accepted image will appear here.</p>
+            </article>
+            <article class="decision-card">
+              <span>Selected image guard</span>
+              <strong id="guardDecision">Not checked</strong>
+              <p id="guardReason">Choose an image and run the guard.</p>
+            </article>
           </div>
 
           <div class="guard-box">
             <div>
-              <h3>Mismatch Guard Demo</h3>
-              <p>Check whether the selected image is safe for the selected post.</p>
+              <p class="section-kicker">Step 3</p>
+              <h3>Mismatch Guard</h3>
+              <p>Use this to prove whether the selected image is safe for the selected article.</p>
             </div>
-            <button id="forceCheckButton" type="button">Check Selected</button>
+            <button id="forceCheckButton" type="button">Check Selected Image</button>
           </div>
-          <pre id="guardResult" class="result-box">No guard check yet.</pre>
+
+          <div class="section-title">
+            <div>
+              <p class="section-kicker">Ranked output</p>
+              <h3>Suggested Images</h3>
+            </div>
+          </div>
+          <div id="suggestions" class="suggestions empty-state">No article selected.</div>
         </section>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <h2>Image Library</h2>
-          <span id="imageCount">0</span>
+          <div>
+            <p class="section-kicker">Real image corpus</p>
+            <h2>Image Library</h2>
+          </div>
+          <span>Click any image to test it</span>
         </div>
         <div id="imageGrid" class="image-grid"></div>
       </section>
