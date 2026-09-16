@@ -3,96 +3,48 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Image Matching Demo</title>
+    <title>Image Match Review</title>
     <link rel="stylesheet" href="/app/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <header class="hero">
-        <div class="hero-main">
-          <p class="eyebrow">FlyRank AI Capstone</p>
-          <h1>AI image matching that knows when to say no.</h1>
-          <p class="hero-copy">
-            Pick a blog post, compare it against real photos, and see whether the mismatch guard accepts the image or
-            rejects it. The main test: a red fox article should not use a wolf photo.
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">AI Image Matching</p>
+          <h1>Pick an article. Test an image. Get a clear decision.</h1>
+          <p>
+            The system recommends relevant photos for blog posts and rejects risky mismatches before an editor uses them.
           </p>
-          <div class="hero-actions">
-            <button id="demoFoxButton" type="button">Run Fox vs Wolf Demo</button>
-            <a href="#library">Browse Image Library</a>
-          </div>
         </div>
-        <aside class="hero-card">
-          <span>What this proves</span>
-          <strong>Relevant image suggested. Unsafe image rejected.</strong>
-          <p>The backend combines Gemini image metadata, embeddings, and guard rules before showing an image to an editor.</p>
-          <button id="ingestButton" type="button">Run AI Ingestion</button>
-        </aside>
+        <div class="masthead-actions">
+          <button id="demoFoxButton" type="button">Try fox vs wolf</button>
+          <button id="ingestButton" class="secondary-button" type="button">Run ingestion</button>
+        </div>
       </header>
 
-      <section class="flow" aria-label="Workflow">
-        <article>
-          <strong>1</strong>
-          <span>Article</span>
-          <p>The post says what the image must be about.</p>
-        </article>
-        <article>
-          <strong>2</strong>
-          <span>AI ranking</span>
-          <p>The system ranks real photos by semantic meaning.</p>
-        </article>
-        <article>
-          <strong>3</strong>
-          <span>Guard decision</span>
-          <p>The selected image becomes MATCH or REJECT.</p>
-        </article>
-      </section>
-
-      <section class="status-grid" aria-label="System status">
-        <article>
-          <span>API status</span>
-          <strong id="apiStatus">Checking</strong>
-        </article>
-        <article>
-          <span>Images</span>
-          <strong id="imageCount">0</strong>
-        </article>
-        <article>
-          <span>Last job</span>
-          <strong id="jobStatus">Idle</strong>
-        </article>
-      </section>
-
-      <section class="demo-grid">
-        <aside class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="section-kicker">Step 1</p>
-              <h2>Articles</h2>
-            </div>
-            <span id="postCount">0</span>
+      <section class="review-board">
+        <aside class="article-rail">
+          <div class="rail-heading">
+            <span>Articles</span>
+            <b id="postCount">0</b>
           </div>
           <div id="postList" class="post-list"></div>
         </aside>
 
-        <section class="panel main-panel">
-          <div class="panel-heading">
+        <section class="review-surface">
+          <div class="surface-heading">
             <div>
-              <p class="section-kicker">Live demo</p>
-              <h2>Article vs Image</h2>
-              <p id="activeBody">Choose an article to see matching results.</p>
+              <span>Current review</span>
+              <h2 id="comparePostTitle">Choose an article</h2>
             </div>
-            <button id="refreshButton" type="button">Refresh Match</button>
+            <button id="refreshButton" class="secondary-button" type="button">Refresh</button>
           </div>
 
-          <div class="compare-grid">
-            <article class="compare-card">
-              <span>Article being matched</span>
-              <h3 id="comparePostTitle">No article selected</h3>
-              <p id="comparePostBody">Pick one article from the left.</p>
-            </article>
+          <p id="comparePostBody" class="article-copy">Select an article from the left to start.</p>
 
-            <article class="compare-card image-compare-card">
-              <div class="compare-card-head">
+          <div class="match-stage">
+            <article class="candidate-card">
+              <div class="candidate-toolbar">
                 <div>
                   <span>Image being tested</span>
                   <h3 id="compareImageTitle">No image selected</h3>
@@ -100,53 +52,35 @@
                 <select id="candidateSelect" aria-label="Candidate image"></select>
               </div>
               <img id="compareImage" alt="Selected candidate" hidden />
-              <p id="compareImageMeta">Pick an image from the library below or from the dropdown.</p>
+              <p id="compareImageMeta">Select an image to inspect.</p>
             </article>
-          </div>
 
-          <div class="decision-row">
-            <article class="decision-card recommendation-card">
-              <span>Top recommendation</span>
-              <strong id="topMatchTitle">Waiting for article</strong>
-              <p id="topMatchReason">The best accepted image will appear here.</p>
-            </article>
-            <article class="decision-card guard-decision-card">
-              <span>Guard result for selected image</span>
+            <article class="decision-panel">
+              <span>Guard decision</span>
               <strong id="guardDecision">Not checked</strong>
-              <p id="guardReason">Choose an image and run the guard.</p>
+              <p id="guardReason">Choose an image, then check whether it is safe for this article.</p>
+              <button id="forceCheckButton" type="button">Check this image</button>
             </article>
           </div>
 
-          <div class="guard-box">
-            <div>
-              <p class="section-kicker">Step 3</p>
-              <h3>Mismatch Guard</h3>
-              <p>Click the button to ask: “Is this selected image safe for this article?”</p>
+          <section class="recommendations">
+            <div class="recommendation-summary">
+              <span>Best system pick</span>
+              <strong id="topMatchTitle">Waiting for article</strong>
+              <p id="topMatchReason">The top accepted recommendation appears here.</p>
             </div>
-            <button id="forceCheckButton" type="button">Check Selected Image</button>
-          </div>
-          <div class="legend">
-            <span><b class="dot match-dot"></b> MATCH means the image is safe to use.</span>
-            <span><b class="dot reject-dot"></b> REJECT means the image is too risky or wrong.</span>
-          </div>
-
-          <div class="section-title">
-            <div>
-              <p class="section-kicker">AI-ranked output</p>
-              <h3>Images the system recommends</h3>
-            </div>
-          </div>
-          <div id="suggestions" class="suggestions empty-state">No article selected.</div>
+            <div id="suggestions" class="suggestions empty-state">No ranked images yet.</div>
+          </section>
         </section>
       </section>
 
-      <section class="panel" id="library">
-        <div class="panel-heading">
+      <section id="library" class="library-section">
+        <div class="library-heading">
           <div>
-            <p class="section-kicker">Real image corpus</p>
-            <h2>Image Library</h2>
+            <span>Image library</span>
+            <h2>Real photos available to match</h2>
           </div>
-          <span>Click any image to test it</span>
+          <p><b id="imageCount">0</b> images · API <b id="apiStatus">checking</b> · Job <b id="jobStatus">idle</b></p>
         </div>
         <div id="imageGrid" class="image-grid"></div>
       </section>

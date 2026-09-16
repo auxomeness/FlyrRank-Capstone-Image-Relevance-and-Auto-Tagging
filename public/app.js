@@ -13,7 +13,6 @@ const els = {
   imageCount: document.querySelector("#imageCount"),
   postList: document.querySelector("#postList"),
   imageGrid: document.querySelector("#imageGrid"),
-  activeBody: document.querySelector("#activeBody"),
   comparePostTitle: document.querySelector("#comparePostTitle"),
   comparePostBody: document.querySelector("#comparePostBody"),
   compareImageTitle: document.querySelector("#compareImageTitle"),
@@ -78,7 +77,7 @@ function renderPosts() {
       (post) => `
         <button class="post-card ${post.id === state.activePostId ? "active" : ""}" data-post-id="${post.id}" type="button">
           <strong>${post.title}</strong>
-          <span>Needs: ${post.expected_subject || "unknown"} image</span>
+          <span>${post.expected_subject || "unknown"} image needed</span>
         </button>
       `,
     )
@@ -107,12 +106,8 @@ function renderImages() {
         <article class="image-card ${image.id === state.selectedImageId ? "selected" : ""}" data-image-id="${image.id}">
           <img src="${image.file_url}" alt="${image.id}" loading="lazy" />
           <div class="card-body">
-            <div class="meta-line">
-              <span>${image.category || image.expected_category || "pending"}</span>
-              <span class="status-${image.status || "pending"}">${image.status || "pending"}</span>
-            </div>
             <strong>${image.subject || image.expected_subject || image.id}</strong>
-            <p>${image.caption || image.failure_reason || image.license || "Not processed yet."}</p>
+            <p>${image.id}</p>
           </div>
         </article>
       `,
@@ -130,16 +125,13 @@ function renderComparison() {
 
   els.comparePostTitle.textContent = post?.title || "No article selected";
   els.comparePostBody.textContent = post?.body || "Pick one article from the left.";
-  els.activeBody.textContent = post
-    ? `The system is trying to find a safe image for: ${post.expected_subject}.`
-    : "Choose an article to see matching results.";
 
   els.compareImageTitle.textContent = image ? `${image.subject || image.expected_subject || image.id}` : "No image selected";
   if (image) {
     els.compareImage.src = image.file_url;
     els.compareImage.alt = image.id;
     els.compareImage.hidden = false;
-    els.compareImageMeta.textContent = `${image.id} - ${image.category || image.expected_category} - ${image.license || "license unknown"}`;
+    els.compareImageMeta.textContent = `${image.id} · ${image.category || image.expected_category} · ${image.license || "license unknown"}`;
   } else {
     els.compareImage.removeAttribute("src");
     els.compareImage.hidden = true;
@@ -159,7 +151,7 @@ function renderSuggestions(result) {
     els.topMatchTitle.textContent = "No confident match";
     els.topMatchReason.textContent = result.suggestions[0]?.reason || "The guard rejected every candidate.";
     els.suggestions.className = "suggestions empty-state";
-    els.suggestions.textContent = "No image passed the mismatch guard.";
+    els.suggestions.textContent = "No image passed the guard.";
     return;
   }
 
@@ -175,12 +167,8 @@ function renderSuggestions(result) {
         <article class="suggestion-card ${suggestion.image_id === state.selectedImageId ? "selected" : ""}" data-image-id="${suggestion.image_id}">
           <img src="${imageUrl(suggestion.image_id)}" alt="${suggestion.image_id}" />
           <div class="card-body">
-            <div class="meta-line">
-              <span>Rank ${suggestion.rank}</span>
-              <span class="badge">${Math.round(Number(suggestion.similarity) * 100)}%</span>
-            </div>
-            <strong>${suggestion.image_id}</strong>
-            <p class="reason">${suggestion.reason}</p>
+            <strong>${getImage(suggestion.image_id)?.subject || suggestion.image_id}</strong>
+            <p>Rank ${suggestion.rank} · ${Math.round(Number(suggestion.similarity) * 100)}%</p>
           </div>
         </article>
       `,
@@ -214,7 +202,7 @@ async function runFoxWolfDemo() {
   renderComparison();
   await refreshMatch();
   await forceSelectedCheck();
-  document.querySelector(".main-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelector(".review-surface")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function refreshMatch() {
@@ -227,7 +215,7 @@ async function refreshMatch() {
   } catch (error) {
     els.suggestions.textContent = error.message;
   } finally {
-    setBusy(els.refreshButton, false, "Refresh Match");
+    setBusy(els.refreshButton, false, "Refresh");
   }
 }
 
@@ -239,13 +227,13 @@ async function forceSelectedCheck() {
     const accepted = result.decision === "suggested";
     els.guardDecision.textContent = accepted ? "MATCH" : "REJECT";
     els.guardDecision.className = accepted ? "decision-ok" : "decision-bad";
-    els.guardReason.textContent = `${result.image_id}: ${result.reason}`;
+    els.guardReason.textContent = result.reason;
   } catch (error) {
     els.guardDecision.textContent = "ERROR";
     els.guardDecision.className = "decision-bad";
     els.guardReason.textContent = error.message;
   } finally {
-    setBusy(els.forceCheckButton, false, "Check Selected Image");
+    setBusy(els.forceCheckButton, false, "Check this image");
   }
 }
 
@@ -258,7 +246,7 @@ async function runIngestion() {
     pollJob();
   } catch (error) {
     els.jobStatus.textContent = error.message;
-    setBusy(els.ingestButton, false, "Run AI Ingestion");
+    setBusy(els.ingestButton, false, "Run ingestion");
   }
 }
 
@@ -271,7 +259,7 @@ async function pollJob() {
     window.setTimeout(pollJob, 3000);
     return;
   }
-  setBusy(els.ingestButton, false, "Run AI Ingestion");
+  setBusy(els.ingestButton, false, "Run ingestion");
   await loadImages();
   if (state.activePostId) await refreshMatch();
 }
