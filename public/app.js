@@ -13,6 +13,9 @@ const els = {
   imageCount: document.querySelector("#imageCount"),
   postList: document.querySelector("#postList"),
   imageGrid: document.querySelector("#imageGrid"),
+  basisImage: document.querySelector("#basisImage"),
+  basisPlaceholder: document.querySelector("#basisPlaceholder"),
+  basisLabel: document.querySelector("#basisLabel"),
   comparePostTitle: document.querySelector("#comparePostTitle"),
   comparePostBody: document.querySelector("#comparePostBody"),
   compareImageTitle: document.querySelector("#compareImageTitle"),
@@ -23,6 +26,10 @@ const els = {
   topMatchReason: document.querySelector("#topMatchReason"),
   guardDecision: document.querySelector("#guardDecision"),
   guardReason: document.querySelector("#guardReason"),
+  resultSimilarity: document.querySelector("#resultSimilarity"),
+  resultConfidence: document.querySelector("#resultConfidence"),
+  resultSubject: document.querySelector("#resultSubject"),
+  resultCategory: document.querySelector("#resultCategory"),
   suggestions: document.querySelector("#suggestions"),
   refreshButton: document.querySelector("#refreshButton"),
   forceCheckButton: document.querySelector("#forceCheckButton"),
@@ -61,6 +68,10 @@ function resetGuard() {
   els.guardDecision.textContent = "Not checked";
   els.guardDecision.className = "decision-pending";
   els.guardReason.textContent = "Choose an image and run the guard.";
+  els.resultSimilarity.textContent = "--";
+  els.resultConfidence.textContent = "--";
+  els.resultSubject.textContent = "--";
+  els.resultCategory.textContent = "--";
 }
 
 function preferredDefaultImage(post) {
@@ -139,6 +150,24 @@ function renderComparison() {
   }
 }
 
+function renderBasis(imageId, similarity) {
+  const image = getImage(imageId);
+  if (!image) {
+    els.basisImage.removeAttribute("src");
+    els.basisImage.hidden = true;
+    els.basisPlaceholder.hidden = false;
+    els.basisLabel.textContent = "Waiting for ranking";
+    return;
+  }
+
+  els.basisImage.src = image.file_url;
+  els.basisImage.alt = image.id;
+  els.basisImage.hidden = false;
+  els.basisPlaceholder.hidden = true;
+  const score = Number.isFinite(Number(similarity)) ? ` · ${Math.round(Number(similarity) * 100)}% match` : "";
+  els.basisLabel.textContent = `${image.subject || image.expected_subject || image.id}${score}`;
+}
+
 function selectImage(imageId) {
   state.selectedImageId = imageId;
   renderImages();
@@ -150,6 +179,7 @@ function renderSuggestions(result) {
   if (result.status === "no_confident_match") {
     els.topMatchTitle.textContent = "No confident match";
     els.topMatchReason.textContent = result.suggestions[0]?.reason || "The guard rejected every candidate.";
+    renderBasis(null);
     els.suggestions.className = "suggestions empty-state";
     els.suggestions.textContent = "No image passed the guard.";
     return;
@@ -157,6 +187,7 @@ function renderSuggestions(result) {
 
   const top = result.suggestions[0];
   const topImage = getImage(top.image_id);
+  renderBasis(top.image_id, top.similarity);
   els.topMatchTitle.textContent = `${topImage?.subject || top.image_id} (${Math.round(Number(top.similarity) * 100)}%)`;
   els.topMatchReason.textContent = top.reason;
 
@@ -202,7 +233,7 @@ async function runFoxWolfDemo() {
   renderComparison();
   await refreshMatch();
   await forceSelectedCheck();
-  document.querySelector(".review-surface")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelector(".compare-stage")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function refreshMatch() {
@@ -228,6 +259,10 @@ async function forceSelectedCheck() {
     els.guardDecision.textContent = accepted ? "MATCH" : "REJECT";
     els.guardDecision.className = accepted ? "decision-ok" : "decision-bad";
     els.guardReason.textContent = result.reason;
+    els.resultSimilarity.textContent = `${Math.round(Number(result.similarity || 0) * 100)}%`;
+    els.resultConfidence.textContent = `${Math.round(Number(result.candidate?.confidence || 0) * 100)}%`;
+    els.resultSubject.textContent = result.candidate?.subject || "unknown";
+    els.resultCategory.textContent = result.candidate?.category || "unknown";
   } catch (error) {
     els.guardDecision.textContent = "ERROR";
     els.guardDecision.className = "decision-bad";
