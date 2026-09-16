@@ -1,5 +1,8 @@
-import { getImage, getPostWithVector, listImagesWithVectors, saveSuggestions } from "../db/repository.js";
+import { createAiProvider } from "../ai/provider.js";
+import { config } from "../config.js";
+import { getImage, getPostWithVector, listImagesWithVectors, logCost, saveSuggestions } from "../db/repository.js";
 import { evaluateCandidate } from "./guard.js";
+import { imageMetadataSchema } from "./schemas.js";
 import { HttpError } from "../util/http.js";
 import { cosineSimilarity, parseEmbedding } from "../util/vector.js";
 import { subjectCompatible } from "./guard.js";
@@ -137,6 +140,85 @@ export async function forceCheck(postId, imageId) {
       category: candidate.category,
       confidence: Number(candidate.confidence),
       caption: candidate.caption,
+    },
+  };
+}
+
+export async function liveImageCheck(postId, upload) {
+  const post = await getPostWithVector(postId);
+  if (!post) throw new HttpError(404, "Post not found");
+  if (!post.post_embedding) throw new HttpError(409, "Post has no embedding. Run seed or ingestion first.");
+
+  let bytes;
+  try {
+    bytes = Buffer.from(upload.data_base64, "base64");
+  } catch {
+    throw new HttpError(400, "Invalid base64 image data");
+  }
+
+  if (!bytes.length) throw new HttpError(400, "Invalid base64 image data");
+  if (bytes.length > config.liveUploadMaxBytes) {
+    throw new HttpError(413, `Uploaded image is larger than ${config.liveUploadMaxBytes} bytes`);
+  }
+
+  const provider = await createAiProvider();
+  let metadata;
+  try {
+    const raw = await provider.classifyImageBytes({
+      bytes,
+      mimeType: upload.mime_type,
+      filename: upload.filename,
+    });
+    const parsed = imageMetadataSchema.safeParse(raw);
+    if (!parsed.success) throw new Error(parsed.error.message);
+    metadata = parsed.data;
+    await logCost({
+      callType: "live_vision",
+      provider: provider.name,
+      model: provider.visionModel,
+      inputUnits: bytes.length,
+      outputUnits: JSON.stringify(metadata).length,
+      status: metadata.confidence < config.visionConfidenceThreshold ? "flagged" : "accepted",
+    });
+  } catch (error) {
+    await logCost({
+      callType: "live_vision",
+      provider: provider.name,
+      model: provider.visionModel,
+      inputUnits: bytes.length,
+      status: "failed",
+    });
+    throw new HttpError(502, "Live image analysis failed", error.message);
+  }
+
+  const embeddingText = `${metadata.subject}. ${metadata.caption}. ${metadata.attributes.join(", ")}`;
+  const embedding = await provider.embedText(embeddingText);
+  await logCost({
+    callType: "live_embedding",
+    provider: provider.name,
+    model: provider.embeddingModel,
+    inputUnits: embeddingText.length,
+    outputUnits: embedding.length,
+    status: "ok",
+  });
+
+  const candidate = {
+    ...metadata,
+    status: metadata.confidence < config.visionConfidenceThreshold ? "flagged" : "accepted",
+  };
+  const similarity = cosineSimilarity(parseEmbedding(post.post_embedding), embedding);
+  const guard = evaluateCandidate(post, candidate, similarity);
+
+  return {
+    post_id: postId,
+    source: "live_upload",
+    decision: guard.decision,
+    reason: guard.reason,
+    similarity: Number(similarity.toFixed(4)),
+    candidate: metadata,
+    models: {
+      vision: provider.visionModel,
+      embedding: provider.embeddingModel,
     },
   };
 }

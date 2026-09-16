@@ -28,6 +28,34 @@ async function requestGemini(path, payload) {
 }
 
 export function createGeminiProvider() {
+  async function classifyImageBytes({ bytes, mimeType }) {
+    const body = await requestGemini(`models/${config.geminiVisionModel}:generateContent`, {
+      generationConfig: {
+        temperature: 0,
+        response_mime_type: "application/json",
+      },
+      contents: [
+        {
+          parts: [
+            {
+              text:
+                "Return only JSON with subject, category, attributes, caption, confidence. Category should be one broad lowercase word. Confidence is 0 to 1.",
+            },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: bytes.toString("base64"),
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const parsed = JSON.parse(body.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+    return Array.isArray(parsed) ? parsed[0] || {} : parsed;
+  }
+
   return {
     name: "gemini",
     visionModel: config.geminiVisionModel,
@@ -35,32 +63,10 @@ export function createGeminiProvider() {
 
     async classifyImage(image) {
       const bytes = await readFile(image.file_path);
-      const body = await requestGemini(`models/${config.geminiVisionModel}:generateContent`, {
-        generationConfig: {
-          temperature: 0,
-          response_mime_type: "application/json",
-        },
-        contents: [
-          {
-            parts: [
-              {
-                text:
-                  "Return only JSON with subject, category, attributes, caption, confidence. Category should be one broad lowercase word. Confidence is 0 to 1.",
-              },
-              {
-                inline_data: {
-                  mime_type: "image/png",
-                  data: bytes.toString("base64"),
-                },
-              },
-            ],
-          },
-        ],
-      });
-
-      const parsed = JSON.parse(body.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
-      return Array.isArray(parsed) ? parsed[0] || {} : parsed;
+      return classifyImageBytes({ bytes, mimeType: image.mime_type || "image/png" });
     },
+
+    classifyImageBytes,
 
     async embedText(text) {
       const body = await requestGemini(`models/${config.geminiEmbeddingModel}:embedContent`, {

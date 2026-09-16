@@ -375,14 +375,62 @@ h1 {
   gap: 12px;
 }
 
+.candidate-controls {
+  display: grid;
+  width: min(100%, 360px);
+  gap: 8px;
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.mode-switch button {
+  width: 100%;
+  min-height: 32px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 10px;
+  box-shadow: none;
+}
+
+.mode-switch button.active {
+  background: var(--glass-strong);
+  color: var(--text);
+  box-shadow: 0 6px 18px rgba(29, 29, 31, 0.08);
+}
+
 .candidate-head select {
-  width: min(100%, 340px);
+  width: 100%;
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.82);
   color: var(--text);
   padding: 0 12px;
+}
+
+.upload-control {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 720;
+}
+
+.upload-control input {
+  display: none;
 }
 
 .result-board {
@@ -457,9 +505,26 @@ h1 {
 }
 
 .recommendations,
-.library-section {
+.library-section,
+.live-note {
   margin-top: 14px;
   padding: 18px;
+}
+
+.live-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
+}
+
+.live-note strong {
+  color: var(--text);
+  white-space: nowrap;
 }
 
 .section-heading {

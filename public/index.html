@@ -65,7 +65,17 @@
                 <span>Candidate</span>
                 <h2 id="compareImageTitle">No image selected</h2>
               </div>
-              <select id="candidateSelect" aria-label="Candidate image"></select>
+              <div class="candidate-controls">
+                <div class="mode-switch" aria-label="Candidate source">
+                  <button id="libraryModeButton" type="button">Library</button>
+                  <button id="uploadModeButton" class="secondary-button" type="button">Upload</button>
+                </div>
+                <select id="candidateSelect" aria-label="Candidate image"></select>
+                <label id="uploadControl" class="upload-control" hidden>
+                  <span>Choose image</span>
+                  <input id="uploadInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                </label>
+              </div>
             </div>
             <img id="compareImage" alt="Selected candidate" hidden />
             <p id="compareImageMeta">Select an image to inspect.</p>
@@ -100,6 +110,11 @@
             <p id="topMatchReason">The top accepted recommendation appears here.</p>
           </div>
           <div id="suggestions" class="suggestions empty-state">No ranked images yet.</div>
+        </section>
+
+        <section class="live-note">
+          <strong>How checking works</strong>
+          <p>Library images use saved AI metadata. Uploaded images call Gemini live when you press “Check this image”.</p>
         </section>
 
         <section id="library" class="library-section">

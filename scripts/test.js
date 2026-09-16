@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { imageMetadataSchema, postCreateSchema } from "../src/domain/schemas.js";
+import { imageMetadataSchema, liveImageCheckSchema, postCreateSchema } from "../src/domain/schemas.js";
 import { evaluateCandidate, subjectCompatible } from "../src/domain/guard.js";
 
 assert.equal(imageMetadataSchema.safeParse({
@@ -19,6 +19,22 @@ assert.equal(imageMetadataSchema.safeParse({
 }).success, false);
 
 assert.equal(postCreateSchema.safeParse({ title: "", body: "" }).success, false);
+assert.equal(
+  liveImageCheckSchema.safeParse({
+    filename: "fox.jpg",
+    mime_type: "image/jpeg",
+    data_base64: "Zm94",
+  }).success,
+  true,
+);
+assert.equal(
+  liveImageCheckSchema.safeParse({
+    filename: "fox.gif",
+    mime_type: "image/gif",
+    data_base64: "Zm94",
+  }).success,
+  false,
+);
 assert.equal(subjectCompatible("red fox", "fox"), true);
 assert.equal(subjectCompatible("red fox", "gray wolf"), false);
 

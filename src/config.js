@@ -9,4 +9,5 @@ export const config = {
   matchSimilarityThreshold: Number(process.env.MATCH_SIMILARITY_THRESHOLD || 0.58),
   matchMinConfidence: Number(process.env.MATCH_MIN_CONFIDENCE || 0.7),
   budgetMaxCallsPerJob: Number(process.env.BUDGET_MAX_CALLS_PER_JOB || 200),
+  liveUploadMaxBytes: Number(process.env.LIVE_UPLOAD_MAX_BYTES || 5 * 1024 * 1024),
 };

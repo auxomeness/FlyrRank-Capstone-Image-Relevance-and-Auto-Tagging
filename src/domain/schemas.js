@@ -22,6 +22,12 @@ export const reviewSchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
+export const liveImageCheckSchema = z.object({
+  filename: z.string().trim().min(1).max(180),
+  mime_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  data_base64: z.string().trim().min(1),
+});
+
 export function formatZod(error) {
   return error.issues.map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`).join("; ");
 }

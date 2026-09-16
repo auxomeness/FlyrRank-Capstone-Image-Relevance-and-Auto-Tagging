@@ -3,6 +3,8 @@ const state = {
   images: [],
   activePostId: null,
   selectedImageId: null,
+  candidateMode: "library",
+  upload: null,
   activeJobId: null,
 };
 
@@ -21,6 +23,10 @@ const els = {
   compareImageTitle: document.querySelector("#compareImageTitle"),
   compareImage: document.querySelector("#compareImage"),
   compareImageMeta: document.querySelector("#compareImageMeta"),
+  libraryModeButton: document.querySelector("#libraryModeButton"),
+  uploadModeButton: document.querySelector("#uploadModeButton"),
+  uploadControl: document.querySelector("#uploadControl"),
+  uploadInput: document.querySelector("#uploadInput"),
   candidateSelect: document.querySelector("#candidateSelect"),
   topMatchTitle: document.querySelector("#topMatchTitle"),
   topMatchReason: document.querySelector("#topMatchReason"),
@@ -72,6 +78,16 @@ function resetGuard() {
   els.resultConfidence.textContent = "--";
   els.resultSubject.textContent = "--";
   els.resultCategory.textContent = "--";
+}
+
+function setCandidateMode(mode) {
+  state.candidateMode = mode;
+  els.libraryModeButton.classList.toggle("active", mode === "library");
+  els.uploadModeButton.classList.toggle("active", mode === "upload");
+  els.candidateSelect.hidden = mode !== "library";
+  els.uploadControl.hidden = mode !== "upload";
+  renderComparison();
+  resetGuard();
 }
 
 function preferredDefaultImage(post) {
@@ -137,6 +153,21 @@ function renderComparison() {
   els.comparePostTitle.textContent = post?.title || "No article selected";
   els.comparePostBody.textContent = post?.body || "Pick one article from the left.";
 
+  if (state.candidateMode === "upload") {
+    els.compareImageTitle.textContent = state.upload?.filename || "Uploaded image";
+    if (state.upload) {
+      els.compareImage.src = state.upload.previewUrl;
+      els.compareImage.alt = state.upload.filename;
+      els.compareImage.hidden = false;
+      els.compareImageMeta.textContent = `${state.upload.filename} · live Gemini check when submitted`;
+    } else {
+      els.compareImage.removeAttribute("src");
+      els.compareImage.hidden = true;
+      els.compareImageMeta.textContent = "Choose a PNG, JPG, or WebP image to run a live AI check.";
+    }
+    return;
+  }
+
   els.compareImageTitle.textContent = image ? `${image.subject || image.expected_subject || image.id}` : "No image selected";
   if (image) {
     els.compareImage.src = image.file_url;
@@ -169,10 +200,30 @@ function renderBasis(imageId, similarity) {
 }
 
 function selectImage(imageId) {
+  state.candidateMode = "library";
   state.selectedImageId = imageId;
+  setCandidateMode("library");
   renderImages();
   renderComparison();
   resetGuard();
+}
+
+function selectUpload(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    const result = String(reader.result || "");
+    const dataBase64 = result.split(",")[1] || "";
+    state.upload = {
+      filename: file.name,
+      mimeType: file.type,
+      dataBase64,
+      previewUrl: result,
+    };
+    setCandidateMode("upload");
+    renderComparison();
+  });
+  reader.readAsDataURL(file);
 }
 
 function renderSuggestions(result) {
@@ -251,10 +302,27 @@ async function refreshMatch() {
 }
 
 async function forceSelectedCheck() {
-  if (!state.activePostId || !state.selectedImageId) return;
+  if (!state.activePostId) return;
+  if (state.candidateMode === "library" && !state.selectedImageId) return;
+  if (state.candidateMode === "upload" && !state.upload) {
+    els.guardDecision.textContent = "UPLOAD";
+    els.guardDecision.className = "decision-pending";
+    els.guardReason.textContent = "Choose an image file before running a live check.";
+    return;
+  }
   setBusy(els.forceCheckButton, true, "Checking");
   try {
-    const result = await api(`/posts/${state.activePostId}/images/${state.selectedImageId}/force-check`, { method: "POST" });
+    const result =
+      state.candidateMode === "upload"
+        ? await api(`/posts/${state.activePostId}/live-image-check`, {
+            method: "POST",
+            body: JSON.stringify({
+              filename: state.upload.filename,
+              mime_type: state.upload.mimeType,
+              data_base64: state.upload.dataBase64,
+            }),
+          })
+        : await api(`/posts/${state.activePostId}/images/${state.selectedImageId}/force-check`, { method: "POST" });
     const accepted = result.decision === "suggested";
     els.guardDecision.textContent = accepted ? "MATCH" : "REJECT";
     els.guardDecision.className = accepted ? "decision-ok" : "decision-bad";
@@ -331,5 +399,9 @@ els.forceCheckButton.addEventListener("click", forceSelectedCheck);
 els.demoFoxButton.addEventListener("click", runFoxWolfDemo);
 els.ingestButton.addEventListener("click", runIngestion);
 els.candidateSelect.addEventListener("change", () => selectImage(els.candidateSelect.value));
+els.libraryModeButton.addEventListener("click", () => setCandidateMode("library"));
+els.uploadModeButton.addEventListener("click", () => setCandidateMode("upload"));
+els.uploadInput.addEventListener("change", () => selectUpload(els.uploadInput.files?.[0]));
 
+setCandidateMode("library");
 boot();

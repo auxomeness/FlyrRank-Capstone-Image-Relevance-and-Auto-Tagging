@@ -11,8 +11,8 @@ import {
   reviewSuggestion,
   upsertPost,
 } from "../db/repository.js";
-import { postCreateSchema, reviewSchema, formatZod } from "../domain/schemas.js";
-import { forceCheck, rankImagesForPost } from "../domain/matching.js";
+import { liveImageCheckSchema, postCreateSchema, reviewSchema, formatZod } from "../domain/schemas.js";
+import { forceCheck, liveImageCheck, rankImagesForPost } from "../domain/matching.js";
 import { runImageIngestion } from "../jobs/ingestImages.js";
 import { asyncHandler, HttpError } from "../util/http.js";
 
@@ -95,6 +95,15 @@ router.post(
   "/posts/:id/images/:imageId/force-check",
   asyncHandler(async (req, res) => {
     res.json(await forceCheck(req.params.id, req.params.imageId));
+  }),
+);
+
+router.post(
+  "/posts/:id/live-image-check",
+  asyncHandler(async (req, res) => {
+    const parsed = liveImageCheckSchema.safeParse(req.body || {});
+    if (!parsed.success) throw new HttpError(400, "Invalid live image upload", formatZod(parsed.error));
+    res.json(await liveImageCheck(req.params.id, parsed.data));
   }),
 );
 

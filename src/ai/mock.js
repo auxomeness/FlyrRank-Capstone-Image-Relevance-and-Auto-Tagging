@@ -32,6 +32,35 @@ export function createMockAiProvider(manifestById) {
       };
     },
 
+    async classifyImageBytes(image) {
+      const filename = String(image.filename || "").toLowerCase();
+      if (filename.includes("wolf")) {
+        return {
+          subject: "gray wolf",
+          category: "animal",
+          attributes: ["gray fur", "wild canid"],
+          caption: "A gray wolf in an outdoor setting.",
+          confidence: 0.94,
+        };
+      }
+      if (filename.includes("fox")) {
+        return {
+          subject: "red fox",
+          category: "animal",
+          attributes: ["orange fur", "bushy tail"],
+          caption: "A red fox standing outdoors.",
+          confidence: 0.94,
+        };
+      }
+      return {
+        subject: "uploaded image",
+        category: "object",
+        attributes: ["user upload"],
+        caption: "A user uploaded image for live checking.",
+        confidence: 0.82,
+      };
+    },
+
     async embedText(text) {
       let enriched = String(text);
       for (const [subject, terms] of Object.entries(synonyms)) {
