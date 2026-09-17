@@ -1,6 +1,6 @@
 # AI Image Understanding & Content Matching
 
-Backend AI Engineering capstone for matching blog posts to a trustworthy image library. The system ingests images, creates structured image metadata, embeds image captions and post text, ranks candidate matches, and rejects unsafe matches with a mismatch guard.
+Backend AI Engineering capstone for matching blog posts to trustworthy images. The system ingests an image library, creates structured image metadata, embeds image captions and post text, ranks candidate matches, rejects unsafe matches with a mismatch guard, and supports a live uploaded-image check through Gemini.
 
 The required demo behavior is covered: a red fox post ranks a fox image first, a forced wolf candidate is rejected with a clear subject mismatch, and an unrelated space post returns `no_confident_match`.
 
@@ -15,7 +15,7 @@ The required demo behavior is covered: a red fox post ranks a fox image first, a
 ## Architecture
 
 ```text
-image manifest + PNG corpus
+image manifest + real image corpus
         |
         v
 POST /jobs/ingest-images
@@ -33,6 +33,8 @@ mismatch guard: category + subject + confidence + similarity
         |
         v
 suggestions, rejections, reviews, cost logs
+
+uploaded image -> Gemini vision live -> schema validation -> embedding -> mismatch guard
 ```
 
 ## Run Locally
@@ -51,13 +53,13 @@ npm start
 
 The API runs at `http://localhost:3000`.
 
-Open the simple visual review page at:
+Open the visual review page at:
 
 ```text
 http://localhost:3000/app/
 ```
 
-By default, `.env.example` uses `AI_PROVIDER=mock` so the project can be graded without a paid API key. To use Gemini, set `AI_PROVIDER=gemini` and add `GEMINI_API_KEY`.
+By default, `.env.example` uses `AI_PROVIDER=mock` so the project can be graded without a paid API key. To use live Gemini upload checks, set `AI_PROVIDER=gemini` and add `GEMINI_API_KEY`.
 
 ## Test And Eval
 
@@ -87,6 +89,7 @@ No confident match checks: 1/1
 | POST | `/posts` | Create or update a post |
 | GET | `/posts/:id/images` | Get ranked image suggestions or `no_confident_match` |
 | POST | `/posts/:id/images/:imageId/force-check` | Run the mismatch guard on one forced candidate |
+| POST | `/posts/:id/live-image-check` | Upload one temporary image and run a live Gemini check |
 | POST | `/suggestions/:id/approve` | Approve a suggestion |
 | POST | `/suggestions/:id/reject` | Reject a suggestion |
 
@@ -104,6 +107,25 @@ Expected outcomes:
 - `post-red-fox` returns a red fox photo as rank 1.
 - Forced `animal-wolf-01` for the fox post returns `decision: "rejected"`.
 - `post-space-nebula` returns `status: "no_confident_match"`.
+
+Live upload check example:
+
+```bash
+node - <<'NODE'
+import { readFile } from "node:fs/promises";
+const bytes = await readFile("data/images/animal-red-fox-02.jpg");
+const res = await fetch("http://localhost:3000/posts/post-red-fox/live-image-check", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    filename: "animal-red-fox-02.jpg",
+    mime_type: "image/jpeg",
+    data_base64: bytes.toString("base64")
+  })
+});
+console.log(await res.text());
+NODE
+```
 
 ## Dataset
 
@@ -126,6 +148,7 @@ The Gemini adapter follows the official Generate Content and Embeddings APIs:
 ## Limitations
 
 - The default mock provider is deterministic and free, but it is not real image understanding. It exists so reviewers can run the full pipeline without keys.
+- Live uploaded-image checks require `AI_PROVIDER=gemini` and a valid `GEMINI_API_KEY` for real image understanding.
 - The Express job worker is in-process. For production, it should move to a durable queue.
 - Embeddings are stored as JSON arrays in Postgres for portability. A production version should use `pgvector`.
 - The image corpus is intentionally small. The goal is trustworthy ranking and rejection behavior, not a large search engine.

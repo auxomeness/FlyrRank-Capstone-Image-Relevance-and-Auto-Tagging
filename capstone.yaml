@@ -9,5 +9,6 @@ endpoints:
   - "POST /posts"
   - "GET /posts/:id/images"
   - "POST /posts/:id/images/:imageId/force-check"
+  - "POST /posts/:id/live-image-check"
   - "POST /suggestions/:id/approve"
   - "POST /suggestions/:id/reject"

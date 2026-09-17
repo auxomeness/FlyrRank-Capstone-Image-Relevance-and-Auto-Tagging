@@ -61,6 +61,7 @@ Fox ranking proof:
 - Fox post ranks a fox image first.
 - Forced wolf candidate for fox post is rejected.
 - Unrelated space post returns `no_confident_match`.
+- Uploaded images can be checked through a live Gemini path at `POST /posts/:id/live-image-check`.
 
 Forced wolf rejection:
 
@@ -88,11 +89,32 @@ No-match proof:
 }
 ```
 
+Live upload validation proof:
+
+```http
+POST /posts/post-red-fox/live-image-check
+Content-Type: application/json
+
+{
+  "filename": "bad.gif",
+  "mime_type": "image/gif",
+  "data_base64": "Zm94"
+}
+```
+
+```json
+{
+  "error": "Invalid live image upload",
+  "details": "mime_type: Invalid enum value. Expected 'image/jpeg' | 'image/png' | 'image/webp', received 'image/gif'"
+}
+```
+
 ## Backend
 
 - Database models and indexes exist: `migrations/001_init.sql`.
 - API endpoints exist in `src/http/routes.js`.
 - Review workflow exists through `POST /suggestions/:id/approve` and `POST /suggestions/:id/reject`.
+- Live uploaded-image checks validate temporary uploads, call the AI provider, embed fresh metadata, and run the existing mismatch guard.
 - Docker Compose starts the PostgreSQL database with a named volume.
 
 Health output:

@@ -35,6 +35,13 @@
 - Cleared stale image metadata and reprocessed the real corpus with Gemini models.
 - Updated the review UI so a reviewer can compare a selected blog post and selected image side by side.
 
+## Final Demo Pass
+
+- Simplified the visual review UI into an article-vs-image comparison screen.
+- Added an upload mode so a reviewer can temporarily upload one image and run a live Gemini check.
+- Kept library images on stored metadata for stability, while uploaded images call Gemini live on demand.
+- Added `POST /posts/:id/live-image-check` with file type validation, a 5MB upload cap, schema validation, embedding, guard evaluation, and cost logging.
+
 ## AI Assistance Notes
 
 AI helped draft the project structure, schema, guard rules, and evidence checklist. I still reviewed and adjusted the scope to keep the project small enough to finish and explain.
